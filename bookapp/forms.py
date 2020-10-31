@@ -1,18 +1,18 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField, BooleanField
 from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationError
+from bookapp.models import User
 
 
 class RegistrationForm(FlaskForm):
     
-    def validateEmail(form, field):
+    def validateEmailDomain(form, field):
         if 'unt.edu' not in field.data:
             raise ValidationError('Email must be from a UNT address')
 
-
     username = StringField('Username',
                            validators=[DataRequired(), Length(min=2, max=20)])
-    email = StringField('Email', validators=[DataRequired(), Email(check_deliverability=True), validateEmail])
+    email = StringField('Email', validators=[DataRequired(), Email(check_deliverability=True), validateEmailDomain])
     password = PasswordField('Password',
                              validators=[DataRequired(), Length(min=5)])
     confirm_password = PasswordField('Confirm Password',
@@ -22,6 +22,17 @@ class RegistrationForm(FlaskForm):
     major = StringField('Major',
                            validators=[Length(min=2, max=20)])
     submit = SubmitField('Sign up')
+
+    def validate_username(self, username):
+        user = User.query.filter_by(username=username.data).first()
+        if user:
+            raise ValidationError('Username is taken')
+
+    def validate_email(self, email):
+        user = User.query.filter_by(email=email.data).first()
+        if user:
+            raise ValidationError('An account with that email already exists')               
+
 
 
 class LoginForm(FlaskForm):
