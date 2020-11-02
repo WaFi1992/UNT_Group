@@ -4,7 +4,7 @@ import re
 
 
 #isbn = StringField('ISBN', validators=[DataRequired()])
-isbn = "9780321982384 "
+isbn = "9780321982384"
 
 def getBookDetails(isbn):
 
@@ -20,17 +20,17 @@ def getBookDetails(isbn):
     #(scraping) find elements
     #might have to take another look at how to retrieve the img
     imgCover = soup.find(id='coverImage')
-    print(imgCover.get('src'))
+    #print(imgCover.get('src'))
 
     #find title in between brackets
     title = soup.find(id='describe-isbn-title')
-    print(f"Title: {title.contents[0]}")
+    #print(f"Title: {title.contents[0]}")
 
     publisher = soup.find(itemprop='publisher')
-    print(f"Publisher: {publisher.contents[0]}")
+    #print(f"Publisher: {publisher.contents[0]}")
 
     author = soup.find(itemprop='author')
-    print(f"Author: {author.contents[0]}")
+    #print(f"Author: {author.contents[0]}")
 
     results.update({'imgCover': imgCover.get('src'),
                     'title': title.contents[0],
