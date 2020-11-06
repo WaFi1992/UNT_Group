@@ -1,0 +1,90 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="content-section">
+    <div class="content-section">
+        <img class="rounded-circle account-img" src="{{ image_file }}">
+        <div class="media-body">
+            <h2 class="account-heading">{{ current_user.user }}</h2>
+            <p class="text-secondary">{{ current_user.email }}</p>
+        </div>
+    </div>
+    <!-- FORM HERE -->
+    <!--Copy a template from registrer.html,
+        from {% block content %} to </form> and </div>-->
+    <!--Delete both password and confirm password fields-->
+    <!--Change legend class="border-bottom mb-4">Join Today</legend>-->
+    <!--To legend class="border-bottom mb-4">Account Info</legend>-->
+    <!--Get rid of the closing </div>-->
+    <!--Copy div class="form-group:>
+       <!--{{ form.email.label(class="form-control-label") }}-->
+    <!--It doesnt make a comment for no reason-->
+    <!--and paste it to </div> after {% endif %} then make it
+        <div class="form-group">
+            {{ form.picture.label() }}
+            {{ form.picture.label(class="form-control-file") }}
+            {% if form.picture.errors %}
+                {% for error in form.email.eorrors %}
+                    <span class="text-danger">{{ error }}</span></br>
+                {% endfor %}
+            {% endif %}-->
+    <!--form method="POST" action="" enctype="multipart/form-data">-->  <!--Add multipart to enctype-->
+</div>
+{% endblock content %}
+
+
+<!--Place this code on routes.py file-->
+<!--from flaskblog.forms import RegistrationForm, LoginForm, UpdateAccountForm-->
+<!--import os-->
+<!--import secrets-->
+<!--PIL import Image-->
+<!--def save_picture(form_picture):
+        random_hex = secrets.token_hex(8)
+        _, f_ext = os.path.splitext(form_picture.filename)
+        picture_fn = random_hex + f_ext
+        picture_path = os.path.join(app.root_path, 'static/profile_pics', picture_fn)
+
+        output_size = (125, 125)
+        i = Image.open(form_picture)
+        i.thumbnail(output_size)
+        i.save(picture_path)
+        
+        return picture_fn
+    -->
+<!--@app.route("/account", methods=['GET', 'POST'])
+<!--@login_required-->
+<!--def account():
+    form = UpdateAccountForm()
+    if form.validate_on_submit():
+        if form.picture.data:
+            picture_file = save_picture(form.picture.data)
+            current_user.image_file = picture_file
+        current_user.username = form.username.data
+        current_user.email = form.email.data
+        db.session.commit()
+        flash('Your account has been updated!', 'success')
+        return redirect(url_for('account'))
+    elif request.method == 'GET':
+        form.username.data = current_user.username
+        form.email.data = current_user.email
+    image_file = url_for('static', filename='profile_pics/' + current_user.image_file)
+    return render_template('account.html', title='Account',
+                          image_file=image_file, form=form)-->
+<!--Place this code on forms.py-->
+<!-- from flask_wtf.file import FileField, FileAllowed-->
+<!--class UpdateAccountForm(FlaskForm):
+        username = StringField('Username',
+                                validator=[DataRequired(), Length(min=2, max=20)])
+        email = StringField('Email',
+                             validators=[DataRequired(), Email()])
+        picture = FileField('Update Profile Picture', validators=[FileAllowed(['jpg', 'png'])])
+        submit = SubmitField('Update')->>
+
+<!--def validate_username(self, username):
+    if username.data != current_user.username:
+    user = User.quert.filter_by(username=username.data).first()
+    if user:
+        raise ValidationError('That username is taken. Please choose a different username')-->
+<!--def validate_email(self, email):
+    email = Email.query.filter_by(email=email.data).first()
+       if email:
+            raise ValidationError('That email is taken. Please choose a different email.')-->
