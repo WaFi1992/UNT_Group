@@ -3,27 +3,14 @@ from flask_login import login_user, current_user, logout_user, login_required
 from bookapp.forms import RegistrationForm, LoginForm, PostForm
 from bookapp.models import User, Posts
 from bookapp import app, db, bcrypt
+from bookapp.scrape import getBookDetails
 
 
-posts = [
-    {
-        'author': 'Corey Schafer',
-        'title': 'Blog Post 1',
-        'content': 'First post content',
-        'date_posted': 'April 20, 2018',
-        'image': 'https://pictures.abebooks.com/isbn/9781259872976-us-300.jpg'
-    },
-    {
-        'author': 'Jane Doe',
-        'title': 'Blog Post 2',
-        'content': 'Second post content',
-        'date_posted': 'April 21, 2018',
-        'image': 'https://pictures.abebooks.com/isbn/9781259872976-us-300.jpg'
-    }
-]
 
 @app.route('/')
+@app.route('/home')
 def index():
+    posts = Posts.query.all()
     return render_template('home.html', posts=posts)
 
 
@@ -76,4 +63,12 @@ def account():
 @login_required
 def new_post():
     form = PostForm()
+    if form.validate_on_submit():
+        data = getBookDetails(form.isbn.data)
+        post = Posts(isbn=form.isbn.data, condition=form.description.data, price=form.price.data, major=form.major.data, author=current_user, title=data['title'], publisher=data['publisher'], writers=data['author'], image_ref=data['imgCover'])
+        db.session.add(post)
+        db.session.commit()
+        flash('Your post has been created.', 'success')
+        return redirect(url_for('about'))
     return render_template('create_post.html', title="New Post", form=form)
+

@@ -31,6 +31,7 @@ class Posts(db.Model):
     writers = db.Column(db.Text, nullable=False)
     image_ref = db.Column(db.String(120), nullable=False, default='book.jpg')
     condition = db.Column(db.Text, nullable=False)
+    
     price = db.Column(db.String(60), nullable=False)
     major = db.Column(db.String(20))
     edition = db.Column(db.String(20))
