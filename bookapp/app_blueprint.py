@@ -1,6 +1,7 @@
-from flask import Blueprint, render_template, url_for, flash, redirect
-from forms import RegistrationForm, LoginForm
-app_blueprint = Blueprint('app_blueprint', __name__)
+from flask import render_template, url_for, flash, redirect
+from bookapp import app, db, Bcrypt
+from bookapp.forms import RegistrationForm, LoginForm
+
 
 posts = [
     {
