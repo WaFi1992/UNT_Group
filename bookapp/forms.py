@@ -1,4 +1,4 @@
-from flask_wtf import FlaskForm
+from flask_wtf.file import FileField, FileAllowed
 from wtforms import StringField, PasswordField, SubmitField, BooleanField
 from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationError
 from bookapp.models import User
@@ -31,7 +31,18 @@ class RegistrationForm(FlaskForm):
     def validate_email(self, email):
         user = User.query.filter_by(email=email.data).first()
         if user:
-            raise ValidationError('An account with that email already exists')               
+            raise ValidationError('An account with that email already exists')     
+
+    def validate_username(self, username):
+        if username.data != current_user.username:
+        user = User.quert.filter_by(username=username.data).first()
+        if user:
+            raise ValidationError('That username is taken. Please choose a different username')      
+
+    def validate_email(self, email):
+    email = Email.query.filter_by(email=email.data).first()
+       if email:
+            raise ValidationError('That email is taken. Please choose a different email.')
 
 
 
@@ -54,3 +65,12 @@ class PostForm(FlaskForm):
 class CommentForm(FlaskForm):
     comment = StringField('Comment', validators=[DataRequired()])
     submit = SubmitField('Post Comment')
+    
+    
+class UpdateAccountForm(FlaskForm):
+        username = StringField('Username',
+                                validator=[DataRequired(), Length(min=2, max=20)])
+        email = StringField('Email',
+                             validators=[DataRequired(), Email()])
+        picture = FileField('Update Profile Picture', validators=[FileAllowed(['jpg', 'png'])])
+        submit = SubmitField('Update')
