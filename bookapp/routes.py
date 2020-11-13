@@ -65,10 +65,37 @@ def new_post():
     form = PostForm()
     if form.validate_on_submit():
         data = getBookDetails(form.isbn.data)
-        post = Posts(isbn=form.isbn.data, condition=form.description.data, price=form.price.data, major=form.major.data, author=current_user, title=data['title'], publisher=data['publisher'], writers=data['author'], image_ref=data['imgCover'])
+        post = Posts(isbn=form.isbn.data, condition=form.condition.data, description=form.description.data, price=form.price.data, major=form.major.data, author=current_user, title=data['title'], publisher=data['publisher'], writers=data['author'], image_ref=data['imgCover'])
         db.session.add(post)
         db.session.commit()
         flash('Your post has been created.', 'success')
         return redirect(url_for('about'))
-    return render_template('create_post.html', title="New Post", form=form)
+    return render_template('create_post.html', title="New Post", form=form, legend='New Post')
 
+@app.route('/post/<int:post_id>')
+def post(post_id):
+    post = Posts.query.get_or_404(post_id)
+    return render_template('post.html', title=Posts.title, post=post)
+
+
+
+@app.route('/post/<int:post_id>/update', methods=['GET', 'POST'])
+@login_required
+def update_post(post_id):
+    post = Posts.query.get_or_404(post_id)
+    if post.author != current_user:
+        abort(403)
+    form = PostForm()
+    if form.validate_on_submit():
+        post.title = form.title.data
+        post.condition = form.description.data
+        db.session.commit()
+        flash("Your post was updated successfully!")
+        return redirect(url_for('post', post_id=post.id))
+    elif request.method == 'GET':
+        form.title.data = post.title
+        form.isbn.data = post.isbn
+        form.price.data = post.price
+        form.major.data = post.major
+        form.description.data = post.condition
+    return render_template('create_post.html', title="Update Post", form=form)
