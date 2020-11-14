@@ -31,7 +31,6 @@ class Posts(db.Model):
     writers = db.Column(db.Text, nullable=False)
     image_ref = db.Column(db.String(120), nullable=False, default='book.jpg')
     condition = db.Column(db.Text, nullable=False)
-    
     price = db.Column(db.String(60), nullable=False)
     major = db.Column(db.String(20))
     edition = db.Column(db.String(20))
@@ -50,3 +49,11 @@ class Comments(db.Model):
 
     def __repr__(self):
         return f"Post('{self.title},')"
+
+
+class Saves(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    posts_id = db.Column(db.Integer, db.ForeignKey('posts.id'), nullable=False)
+    def __repr__(self):
+        return f"/post/{self.posts_id}"

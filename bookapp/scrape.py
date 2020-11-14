@@ -4,7 +4,7 @@ import re
 
 
 #isbn = StringField('ISBN', validators=[DataRequired()])
-isbn = "9780321982384"
+
 
 def getBookDetails(isbn):
 
@@ -16,7 +16,6 @@ def getBookDetails(isbn):
     #scraping
     page = requests.get(url)
     soup = BeautifulSoup(page.content, 'html.parser')
-
     #(scraping) find elements
     #might have to take another look at how to retrieve the img
     imgCover = soup.find(id='coverImage')

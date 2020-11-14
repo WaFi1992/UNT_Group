@@ -21,16 +21,16 @@
                 {% endif %}       
             </div>
             <div class="form-group">
-                {{form.description.label(class="form-control-label")}}
-                {% if form.description.errors %}
-                    {{form.description(class="form-control form-control-lg is-invalid")}}
+                {{form.condition.label(class="form-control-label")}}
+                {% if form.condition.errors %}
+                    {{form.condition(class="form-control form-control-lg is-invalid")}}
                     <div class="invalid-feedback">
-                        {% for error in form.description.errors %}
+                        {% for error in form.condition.errors %}
                             <span>{{ error }}</span>
                         {% endfor %}
                     </div>
                 {% else %}
-                    {{form.description(class="form-control form-control-lg")}}
+                    {{form.condition(class="form-control form-control-lg")}}
                 {% endif %}
             </div>
             <div class="form-group">
