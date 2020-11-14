@@ -84,7 +84,7 @@ def post(post_id):
             db.session.add(save)
             db.session.commit()
             flash('This post has been saved.', 'success')
-            return redirect(url_for('post', post_id=post_id))sa
+            return redirect(url_for('post', post_id=post_id))
          else:
             db.session.delete(is_saved[0])
             db.session.commit()
