@@ -63,3 +63,11 @@ class Comments(db.Model):
 
     def __repr__(self):
         return f"Post('{self.title},')"
+
+
+class Saves(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    posts_id = db.Column(db.Integer, db.ForeignKey('posts.id'), nullable=False)
+    def __repr__(self):
+        return f"/post/{self.posts_id}"

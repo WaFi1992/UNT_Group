@@ -1,0 +1,22 @@
+{% extends "layout.html" %}
+{% block content %}
+    <article class="media content-section">
+        <form method="POST" action="">
+            {{ form.hidden_tag() }}
+            <div class="form-group">
+                {{ form.submit(class="btn btn-outline-info") }}
+            </div>
+        </form>
+        <div class="media-body">
+            <div class="article-metadata">
+                <div id="coverImageContainer" class="imageContainer">
+                    <img class="image" id="coverImage" src="{{ post.image_ref }}" height="250" onerror="imgError(this);">
+                </div>
+                <a class="mr-2" href="#">{{ post.author }}</a>
+                <small class="text-muted">{{ post.date }}</small>
+            </div>
+            <h2 class="article-title">{{ post.title }}</h2>
+            <p class="article-description">{{ post.description }}</p>
+        </div>
+    </article>
+{% endblock content %}
