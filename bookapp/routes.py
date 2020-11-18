@@ -1,4 +1,4 @@
-from flask import render_template, url_for, flash, redirect, request
+from flask import abort, render_template, url_for, flash, redirect, request
 from flask_login import login_user, current_user, logout_user, login_required
 from bookapp.forms import RegistrationForm, LoginForm, PostForm
 from bookapp.models import User, Posts
@@ -65,11 +65,11 @@ def new_post():
     form = PostForm()
     if form.validate_on_submit():
         data = getBookDetails(form.isbn.data)
-        post = Posts(isbn=form.isbn.data, condition=form.condition.data, description=form.description.data, price=form.price.data, major=form.major.data, author=current_user, title=data['title'], publisher=data['publisher'], writers=data['author'], image_ref=data['imgCover'])
+        post = Posts(isbn=form.isbn.data, condition=form.condition.data, price=form.price.data, major=form.major.data, author=current_user, title=data['title'], publisher=data['publisher'], writers=data['author'], image_ref=data['imgCover'])
         db.session.add(post)
         db.session.commit()
-        flash('Your post has been created.', 'success')
-        return redirect(url_for('about'))
+        flash("Your post has been created.", "success")
+        return redirect('/home')
     return render_template('create_post.html', title="New Post", form=form, legend='New Post')
 
 @app.route('/post/<int:post_id>')
@@ -88,14 +88,26 @@ def update_post(post_id):
     form = PostForm()
     if form.validate_on_submit():
         post.title = form.title.data
-        post.condition = form.description.data
+        post.condition = form.condition.data
         db.session.commit()
-        flash("Your post was updated successfully!")
+        flash("Your post was updated successfully!", "success")
         return redirect(url_for('post', post_id=post.id))
     elif request.method == 'GET':
         form.title.data = post.title
         form.isbn.data = post.isbn
         form.price.data = post.price
         form.major.data = post.major
-        form.description.data = post.condition
+        form.condition.data = post.condition
     return render_template('create_post.html', title="Update Post", form=form)
+
+
+@app.route('/post/<int:post_id>/delete', methods=['POST'])
+@login_required
+def delete_post(post_id):
+    post = Posts.query.get_or_404(post_id)
+    if post.author != current_user:
+        abort(403)
+    db.session.delete(post)
+    db.session.commit()
+    flash("Your post has been deleted", "success")
+    return redirect('/home')
