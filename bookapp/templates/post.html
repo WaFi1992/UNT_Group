@@ -19,6 +19,53 @@
             <p class="article-description">{{ post.condition }}</p>
         </div>
     </article>
+    <!-- Comment Section -->
+    <div class="content-section">
+        <form method="POST" action="">
+            {{ form.hidden_tag() }}
+            <fieldset class="form-group">
+                
+                <div class="form-group">
+                    {{form.comment.label(class="form-control-label")}}
+                    {% if form.comment.errors %}
+                        {{form.comment(class="form-control form-control-lg is-invalid")}}
+                        <div class="invalid-feedback">
+                            {% for error in form.comment.errors %}
+                                <span>{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        {{form.comment(class="form-control form-control-lg")}}
+                    {% endif %}       
+                </div>
+                
+            </fieldset>
+            <div class="form-group">
+                {{ form.submit(class="btn btn-outline-info")}}
+            </div>
+        </form>
+    </div>
+
+    <div class="comments-section">
+        <h3>Comments</h3>
+        {% for comments in comment %}
+        <div class="comment-list">
+            <div class="single-comment justify-content-between d-flex">
+                <div class="descinding">
+                    <h4><a href="#">{{comments["username"]}}</a></h4>
+                    <p class="date">{{comments["comment_time"]}}</p>
+                    <p class="comment">
+                        {{comments["comment_text"]}}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+        {% endfor %}
+
+
+
+
     <!-- Modal -->
     <div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel" aria-hidden="true">
         <div class="modal-dialog" role="document">

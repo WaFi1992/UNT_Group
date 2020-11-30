@@ -1,7 +1,7 @@
 from flask import abort, render_template, url_for, flash, redirect, request
 from flask_login import login_user, current_user, logout_user, login_required
-from bookapp.forms import RegistrationForm, LoginForm, PostForm
-from bookapp.models import User, Posts
+from bookapp.forms import RegistrationForm, LoginForm, PostForm, CommentForm
+from bookapp.models import User, Posts, Comments
 from bookapp import app, db, bcrypt
 from bookapp.scrape import getBookDetails
 
@@ -72,10 +72,50 @@ def new_post():
         return redirect('/home')
     return render_template('create_post.html', title="New Post", form=form, legend='New Post')
 
-@app.route('/post/<int:post_id>')
+
+
+
+
+@app.route('/post/<int:post_id>', methods=['GET','POST'])
 def post(post_id):
     post = Posts.query.get_or_404(post_id)
-    return render_template('post.html', title=Posts.title, post=post)
+    comment = Comments.query.filter_by(posts_id=post.id).all()
+    ids = [item.user_id for item in comment]
+    users = User.query.filter(User.id.in_(ids)).all()
+    
+    comments = []
+    for c in comment:
+        user = None
+        for item in users:
+            if item.id == c.user_id:
+                user = item
+                break
+        if user:
+            comments.append({
+                "username": user.username,
+                "comment_text": c.comment_text,
+                "comment_time": c.comment_time
+            })
+    
+
+    form = CommentForm()
+
+    if form.validate_on_submit():        
+        comment = Comments(comment_text=form.comment.data, user_id=current_user.id, posts_id=post.id)
+
+        db.session.add(comment)
+        db.session.commit()
+        flash("Your comment was posted successfully!", "success")
+        return redirect(url_for('post', post_id=post.id))
+
+
+    return render_template('post.html', title=Posts.title, post=post, form=form, comment=comments)
+
+
+
+
+
+
 
 
 

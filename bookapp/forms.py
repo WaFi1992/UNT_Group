@@ -56,7 +56,7 @@ class PostForm(FlaskForm):
    
     #data required from user
 
-    #title = StringField('Title', validators=[DataRequired()])
+    title = StringField('Title', validators=[])
     isbn = StringField('ISBN', validators=[DataRequired()])
     #description = TextAreaField('Description', validators=[DataRequired()])
     condition = StringField('Condition', validators=[DataRequired()])
@@ -68,4 +68,5 @@ class PostForm(FlaskForm):
 
 class CommentForm(FlaskForm):
     comment = StringField('Comment', validators=[DataRequired()])
+    
     submit = SubmitField('Post Comment')
