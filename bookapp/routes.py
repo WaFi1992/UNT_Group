@@ -1,3 +1,4 @@
+import datetime
 from flask import abort, render_template, url_for, flash, redirect, request
 from flask_login import login_user, current_user, logout_user, login_required
 from bookapp.forms import RegistrationForm, LoginForm, PostForm, CommentForm
@@ -94,7 +95,7 @@ def post(post_id):
             comments.append({
                 "username": user.username,
                 "comment_text": c.comment_text,
-                "comment_time": c.comment_time
+                "comment_time": c.comment_time.strftime("%d-%m-%Y %I:%M%p")
             })
     
 
@@ -145,8 +146,13 @@ def update_post(post_id):
 @login_required
 def delete_post(post_id):
     post = Posts.query.get_or_404(post_id)
+    comments = Comments.query.filter_by(posts_id=post.id).all()
+    
     if post.author != current_user:
         abort(403)
+        
+    for c in comments:
+        db.session.delete(c)
     db.session.delete(post)
     db.session.commit()
     flash("Your post has been deleted", "success")
