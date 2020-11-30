@@ -49,6 +49,7 @@ class Posts(db.Model):
     major = db.Column(db.String(20))
     edition = db.Column(db.String(20))
     binding = db.Column(db.String(20))
+    #comments = db.Column(db.Integer, default=0)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
     def __repr__(self):
@@ -59,6 +60,8 @@ class Comments(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     comment_text = db.Column(db.Text, nullable=False)
+    comment_time = db.Column(db.DateTime, nullable=False, 
+                    default=datetime.utcnow)
     posts_id = db.Column(db.Integer, db.ForeignKey('posts.id'), nullable=False)
 
     def __repr__(self):
