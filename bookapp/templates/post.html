@@ -4,9 +4,8 @@
         <form method="POST" action="">
             {{ form.hidden_tag() }}
             <div class="form-group">
-                {{ form.submit(class="btn btn-outline-info") }}
+                {{ form.save(class="btn btn-outline-info") }}
             </div>
-        </form>
         <div class="media-body">
             <div class="article-metadata">
                 <div id="coverImageContainer" class="imageContainer">
@@ -27,8 +26,6 @@
     </article>
     <!-- Comment Section -->
     <div class="content-section">
-        <form method="POST" action="">
-            {{ form.hidden_tag() }}
             <fieldset class="form-group">
                 
                 <div class="form-group">

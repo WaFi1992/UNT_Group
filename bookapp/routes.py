@@ -6,7 +6,7 @@ from flask import render_template, url_for, flash, redirect, request, abort
 from flask_wtf.file import FileField, FileAllowed
 from flask_login import login_user, current_user, logout_user, login_required
 from flask_mail import Message
-from bookapp.forms import RegistrationForm, LoginForm, PostForm, SaveForm, UpdateAccountForm, RequestResetForm, ResetPasswordForm, CommentForm
+from bookapp.forms import RegistrationForm, LoginForm, PostForm, UpdateAccountForm, RequestResetForm, ResetPasswordForm, CommentForm
 from bookapp.models import User, Posts, Saves, Comments
 from bookapp import app, db, bcrypt, mail
 from bookapp.scrape import getBookDetails
@@ -196,23 +196,8 @@ def post(post_id):
     comment = Comments.query.filter_by(posts_id=post.id).all()
     ids = [item.user_id for item in comment]
     users = User.query.filter(User.id.in_(ids)).all()
-    save_form = SaveForm()
     is_saved = Saves.query.filter_by(user_id=current_user.id, posts_id=post_id).all()
-    if save_form.validate_on_submit():
-         if len(is_saved) == 0:
-            save = Saves(user_id=current_user.id, posts_id=post_id)
-            db.session.add(save)
-            db.session.commit()
-            flash('This post has been saved.', 'success')
-            return redirect(url_for('post', post_id=post_id))
-         else:
-            db.session.delete(is_saved[0])
-            db.session.commit()
-            flash('This post has been removed from saves.')
-            return redirect(url_for('post', post_id=post_id))
-    if is_saved:
-        save_form.submit.label.text = 'Remove from Saves'
-    
+
     comments = []
     for c in comment:
         user = None
@@ -230,16 +215,31 @@ def post(post_id):
 
     cform = CommentForm()
 
-    if cform.validate_on_submit():        
-        comment = Comments(comment_text=cform.comment.data, user_id=current_user.id, posts_id=post.id)
-
-        db.session.add(comment)
-        db.session.commit()
-        flash("Your comment was posted successfully!", "success")
-        return redirect(url_for('post', post_id=post.id))
-
-
-    return render_template('post.html', title=Posts.title, post=post, form=cform, comment=comments, saveform=save_form)
+    if cform.validate_on_submit():
+        if cform.save.data:
+            print(";")
+            if len(is_saved) == 0:
+                save = Saves(user_id=current_user.id, posts_id=post_id)
+                db.session.add(save)
+                db.session.commit()
+                flash('This post has been saved.', 'success')
+                return redirect(url_for('post', post_id=post_id))
+            else:
+                db.session.delete(is_saved[0])
+                db.session.commit()
+                flash('This post has been removed from saves.')
+                return redirect(url_for('post', post_id=post_id))        
+        else:
+            comment = Comments(comment_text=cform.comment.data, user_id=current_user.id, posts_id=post.id)
+            db.session.add(comment)
+            db.session.commit()
+            flash("Your comment was posted successfully!", "success")
+            return redirect(url_for('post', post_id=post.id))
+    if is_saved:
+        cform.save.label.text = 'Remove from Saves'
+    else:
+        cform.save.label.text = 'Save Post'
+    return render_template('post.html', title=Posts.title, post=post, form=cform, comment=comments)
 
 
 

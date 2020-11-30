@@ -106,8 +106,12 @@ class ResetPasswordForm(FlaskForm):
     submit = SubmitField('Reset Password')                    
     
 class CommentForm(FlaskForm):
-    comment = StringField('Comment', validators=[DataRequired()])
+    save = SubmitField()
+    comment = StringField('Comment', validators=[])
     submit = SubmitField('Post Comment')
+    def validate_submit(self, submit):
+        if self.comment is None:
+            raise ValidationError('A comment can not be empty!')   
     
 class UpdateAccountForm(FlaskForm):
     username = StringField('Username',
@@ -120,9 +124,3 @@ class UpdateAccountForm(FlaskForm):
     payment_profile = StringField('Payment Profile',
                            validators=[Length(min=2, max=25)])
     submit = SubmitField('Update')
-
-class SaveForm(FlaskForm):
-    submit = SubmitField('Save Post')
-
-class UnsaveForm(FlaskForm):
-    submit = SubmitField('Remove Post From Saves')
