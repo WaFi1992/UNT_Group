@@ -13,8 +13,18 @@ from bookapp.scrape import getBookDetails
 @app.route('/')
 @app.route('/home')
 def index():
-    posts = Posts.query.all()
+    page = request.args.get('page', 1, type=int)
+    posts = Posts.query.paginate(per_page=5, page=page)
     return render_template('home.html', posts=posts)
+
+@app.route('/user/<username>')
+def user_post(username):
+    user = User.query.filter_by(username=username).first_or_404()
+    page = request.args.get('page', 1, type=int)
+    posts = Posts.query\
+                 .filter_by(author=user)\
+                 .paginate(per_page=5, page=page)
+    return render_template('home.html', title=f"{username} Posts", posts=posts)
 
 
 @app.route('/about')
@@ -128,9 +138,11 @@ def save_picture(form_picture):
 def send_reset_email(user):
     token = user.get_reset_token()
     msg = Message('Password Reset Request', 
-                   sender='jonathonwright@my.unt.edu', 
+                   sender='noreplyFORCLASS@my.unt.edu', 
                    recipients=[user.email])
-    msg.body = f"""To reset your password, visit the following link:{url_for('reset_token', token=token, _external=True)} If you did not make this request, then simply record this email and no changes will be made."""
+    msg.body = f"""To reset your password, visit the following link:
+                   {url_for('reset_token', token=token, _external=True)}
+                   If you did not make this request, then simply record this email and no changes will be made."""
     mail.send(msg)
     
 @app.route("/reset_password", methods=["GET", "POST"])
@@ -167,8 +179,8 @@ def reset_token(token):
 @login_required
 def new_post():
     form = PostForm()
-    return render_template('create_post.html', title="New Post", form=form)
     if form.validate_on_submit():
+        print(":)")
         data = getBookDetails(form.isbn.data)
         post = Posts(isbn=form.isbn.data, condition=form.condition.data, price=form.price.data, major=form.major.data, author=current_user, title=data['title'], publisher=data['publisher'], writers=data['author'], image_ref=data['imgCover'])
         db.session.add(post)
@@ -203,7 +215,12 @@ def post(post_id):
 @login_required
 def saved():
     saves = Saves.query.filter_by(user_id=current_user.id).all()
-    post = [Posts.query.get(item.posts_id) for item in saves]
+    page = request.args.get('page', 1, type=int)
+    ids = [item.posts_id for item in saves]
+    post = Posts.query\
+                 .filter(Posts.id.in_(ids))\
+                 .paginate(per_page=5, page=page)
+    
     # I will add something to where you can remove from saves
     return render_template('home.html', posts=post)
 

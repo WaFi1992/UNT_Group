@@ -80,17 +80,8 @@ class UpdateAccountForm(FlaskForm):
 
 
 class PostForm(FlaskForm):
-    #isbn = StringField('ISBN', validators=[DataRequired()])
 
-    #isbn = 9781947556744
-
-    
-   
-    #data required from user
-
-    # title = StringField('Title', validators=[DataRequired()])
     isbn = StringField('ISBN', validators=[DataRequired()])
-    # description = TextAreaField('Description', validators=[DataRequired()])
     condition = StringField('Condition', validators=[DataRequired()])
     price = StringField('Price', validators=[DataRequired()])
     major = StringField('Major', validators=[DataRequired()])
@@ -118,10 +109,14 @@ class CommentForm(FlaskForm):
     
 class UpdateAccountForm(FlaskForm):
     username = StringField('Username',
-                            validator=[DataRequired(), Length(min=2, max=20)])
+                            validators=[DataRequired(), Length(min=2, max=20)])
     email = StringField('Email',
                             validators=[DataRequired(), Email()])
     picture = FileField('Update Profile Picture', validators=[FileAllowed(['jpg', 'png'])])
+    major = StringField('Major',
+                           validators=[Length(min=2, max=20)])
+    payment_profile = StringField('Payment Profile',
+                           validators=[Length(min=2, max=25)])
     submit = SubmitField('Update')
 
 class SaveForm(FlaskForm):
