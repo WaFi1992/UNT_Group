@@ -1,3 +1,4 @@
+import datetime
 import os
 import secrets
 from PIL import Image
@@ -5,8 +6,8 @@ from flask import render_template, url_for, flash, redirect, request, abort
 from flask_wtf.file import FileField, FileAllowed
 from flask_login import login_user, current_user, logout_user, login_required
 from flask_mail import Message
-from bookapp.forms import RegistrationForm, LoginForm, PostForm, SaveForm, UpdateAccountForm, RequestResetForm, ResetPasswordForm
-from bookapp.models import User, Posts, Saves
+from bookapp.forms import RegistrationForm, LoginForm, PostForm, SaveForm, UpdateAccountForm, RequestResetForm, ResetPasswordForm, CommentForm
+from bookapp.models import User, Posts, Saves, Comments
 from bookapp import app, db, bcrypt, mail
 from bookapp.scrape import getBookDetails
 
@@ -185,17 +186,19 @@ def new_post():
         post = Posts(isbn=form.isbn.data, condition=form.condition.data, price=form.price.data, major=form.major.data, author=current_user, title=data['title'], publisher=data['publisher'], writers=data['author'], image_ref=data['imgCover'])
         db.session.add(post)
         db.session.commit()
-        flash('Your post has been created.', 'success')
-        return redirect(url_for('about'))
+        flash("Your post has been created.", "success")
+        return redirect('/home')
     return render_template('create_post.html', title="New Post", form=form, legend='New Post')
 
-@app.route('/post/<int:post_id>', methods=['GET', 'POST'])
-@login_required
+@app.route('/post/<int:post_id>', methods=['GET','POST'])
 def post(post_id):
     post = Posts.query.get_or_404(post_id)
-    form = SaveForm()
+    comment = Comments.query.filter_by(posts_id=post.id).all()
+    ids = [item.user_id for item in comment]
+    users = User.query.filter(User.id.in_(ids)).all()
+    save_form = SaveForm()
     is_saved = Saves.query.filter_by(user_id=current_user.id, posts_id=post_id).all()
-    if form.validate_on_submit():
+    if save_form.validate_on_submit():
          if len(is_saved) == 0:
             save = Saves(user_id=current_user.id, posts_id=post_id)
             db.session.add(save)
@@ -208,8 +211,41 @@ def post(post_id):
             flash('This post has been removed from saves.')
             return redirect(url_for('post', post_id=post_id))
     if is_saved:
-        form.submit.label.text = 'Remove from Saves'
-    return render_template('post.html', title=Posts.title, post=post, form=form)
+        save_form.submit.label.text = 'Remove from Saves'
+    
+    comments = []
+    for c in comment:
+        user = None
+        for item in users:
+            if item.id == c.user_id:
+                user = item
+                break
+        if user:
+            comments.append({
+                "username": user.username,
+                "comment_text": c.comment_text,
+                "comment_time": c.comment_time.strftime("%d-%m-%Y %I:%M%p")
+            })
+    
+
+    cform = CommentForm()
+
+    if cform.validate_on_submit():        
+        comment = Comments(comment_text=cform.comment.data, user_id=current_user.id, posts_id=post.id)
+
+        db.session.add(comment)
+        db.session.commit()
+        flash("Your comment was posted successfully!", "success")
+        return redirect(url_for('post', post_id=post.id))
+
+
+    return render_template('post.html', title=Posts.title, post=post, form=cform, comment=comments, saveform=save_form)
+
+
+
+
+
+
 
 @app.route('/posts/saves', methods=['GET', 'POST'])
 @login_required
@@ -233,9 +269,10 @@ def update_post(post_id):
         abort(403)
     form = PostForm()
     if form.validate_on_submit():
+        post.title = form.title.data
         post.condition = form.condition.data
         db.session.commit()
-        flash("Your post was updated successfully!")
+        flash("Your post was updated successfully!", "success")
         return redirect(url_for('post', post_id=post.id))
     elif request.method == 'GET':
         form.isbn.data = post.isbn
@@ -243,3 +280,20 @@ def update_post(post_id):
         form.major.data = post.major
         form.condition.data = post.condition
     return render_template('create_post.html', title="Update Post", form=form)
+
+
+@app.route('/post/<int:post_id>/delete', methods=['POST'])
+@login_required
+def delete_post(post_id):
+    post = Posts.query.get_or_404(post_id)
+    comments = Comments.query.filter_by(posts_id=post.id).all()
+    
+    if post.author != current_user:
+        abort(403)
+        
+    for c in comments:
+        db.session.delete(c)
+    db.session.delete(post)
+    db.session.commit()
+    flash("Your post has been deleted", "success")
+    return redirect('/home')

@@ -81,7 +81,9 @@ class UpdateAccountForm(FlaskForm):
 
 class PostForm(FlaskForm):
 
+    title = StringField('Title', validators=[])
     isbn = StringField('ISBN', validators=[DataRequired()])
+    #description = TextAreaField('Description', validators=[DataRequired()])
     condition = StringField('Condition', validators=[DataRequired()])
     price = StringField('Price', validators=[DataRequired()])
     major = StringField('Major', validators=[DataRequired()])
