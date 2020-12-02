@@ -1,18 +1,31 @@
 import datetime
-from flask import abort, render_template, url_for, flash, redirect, request
+import os
+import secrets
+from PIL import Image
+from flask import render_template, url_for, flash, redirect, request, abort
+from flask_wtf.file import FileField, FileAllowed
 from flask_login import login_user, current_user, logout_user, login_required
-from bookapp.forms import RegistrationForm, LoginForm, PostForm, CommentForm
-from bookapp.models import User, Posts, Comments
-from bookapp import app, db, bcrypt
+from flask_mail import Message
+from bookapp.forms import RegistrationForm, LoginForm, PostForm, UpdateAccountForm, RequestResetForm, ResetPasswordForm, CommentForm
+from bookapp.models import User, Posts, Saves, Comments
+from bookapp import app, db, bcrypt, mail
 from bookapp.scrape import getBookDetails
-
-
 
 @app.route('/')
 @app.route('/home')
 def index():
-    posts = Posts.query.all()
+    page = request.args.get('page', 1, type=int)
+    posts = Posts.query.paginate(per_page=5, page=page)
     return render_template('home.html', posts=posts)
+
+@app.route('/user/<username>')
+def user_post(username):
+    user = User.query.filter_by(username=username).first_or_404()
+    page = request.args.get('page', 1, type=int)
+    posts = Posts.query\
+                 .filter_by(author=user)\
+                 .paginate(per_page=5, page=page)
+    return render_template('home.html', title=f"{username} Posts", posts=posts)
 
 
 @app.route('/about')
@@ -55,23 +68,160 @@ def logout():
     logout_user()
     return redirect(url_for('login'))
 
-@app.route('/account')
+def save_picture(form_picture):
+    random_hex = secrets.token_hex(8)
+    _, f_ext = os.path.splitext(form_picture.filename)
+    picture_fn = random_hex + f_ext
+    picture_path = os.path.join(app.root_path, 'static/profile_pics', picture_fn)
+
+    output_size = (125, 125)
+    i = Image.open(form_picture)
+    i.thumbnail(output_size)
+    i.save(picture_path)
+
+    return picture_fn
+
+@app.route('/account', methods=["GET", "POST"])
 @login_required
 def account():
-    return render_template('account.html', title="Account")
+    form = UpdateAccountForm()
+    if form.validate_on_submit():
+        if form.picture.data:
+            picture_file = save_picture(form.picture.data)
+            current_user.image_file = picture_file
+        current_user.username = form.username.data
+        current_user.email = form.email.data
+        current_user.major = form.major.data
+        current_user.payment_profile = form.payment_profile.data
+        db.session.commit()
+        flash('Your account has been updated!', 'success')
+        return redirect(url_for('account'))
+    elif request.method == 'GET':
+        form.username.data = current_user.username
+        form.email.data = current_user.email
+        form.major.data = current_user.major
+        form.payment_profile.data = current_user.payment_profile
+    image_file = url_for('static', filename='profile_pics/' + current_user.image_file)
+    return render_template('account.html', title="Account", image_file=image_file, form=form)    
+    
+def save_picture(form_picture):                                                                                           
+    random_hex = secrets.token_hex(8)
+    _, f_ext = os.path.splitext(form_picture.filename)
+    picture_fn = random_hex + f_ext
+    picture_path = os.path.join(app.root_path, 'static/profile_pics', picture_fn)
+    output_size = (125, 125)
+    i = Image.open(form_picture)
+    i.thumbnail(output_size)
+    i.save(picture_path)
 
+    return picture_fn
+        
+# @app.route("/account", methods=['GET', 'POST'])
+# @login_required
+# def account():
+#     form = UpdateAccountForm()
+#     if form.validate_on_submit():
+#         if form.picture.data:
+#             picture_file = save_picture(form.picture.data)
+#             current_user.image_file = picture_file
+#         current_user.username = form.username.data
+#         current_user.email = form.email.data
+#         db.session.commit()
+#         flash('Your account has been updated!', 'success')
+#         return redirect(url_for('account'))
+#     elif request.method == 'GET':
+#         form.username.data = current_user.username
+#         form.email.data = current_user.email
+#     image_file = url_for('static', filename='profile_pics/' + current_user.image_file)
+#     return render_template('account.html', title='Account',
+#                           image_file=image_file, form=form)
+                          
+def send_reset_email(user):
+    token = user.get_reset_token()
+    msg = Message('Password Reset Request', 
+                   sender='noreplyFORCLASS@my.unt.edu', 
+                   recipients=[user.email])
+    msg.body = f"""To reset your password, visit the following link:
+                   {url_for('reset_token', token=token, _external=True)}
+                   If you did not make this request, then simply record this email and no changes will be made."""
+    mail.send(msg)
+    
+@app.route("/reset_password", methods=["GET", "POST"])
+def reset_request():
+    if current_user.is_authenticated:
+        return redirect('/home')
+    form = RequestResetForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data).first()
+        send_reset_email(user)
+        flash('An email has been sent with instructions to reset your password.', 'info')
+        return redirect(url_for('login'))
+    return render_template('reset_request.html', title='Reset Password',
+                           form=form)
+                          
+@app.route("/reset_password/<token>", methods=['GET', 'POST'])
+def reset_token(token):
+    if current_user.is_authenticated:
+        return redirect('/home')
+    user = User.verify_reset_token(token)
+    if user is None:
+        flash('That is an invalid or expired token', 'warning')
+        return redirect(url_for('reset_request'))
+    form = ResetPasswordForm()
+    if form.validate_on_submit():
+        hashed_password = bcrypt.generate_password_hash(form.password.data).decode('utf-8')
+        user.password = hashed_password
+        db.session.commit()
+        flash('Your password has been updated! You are now able to log in', 'success')
+        return redirect(url_for('login'))
+    return render_template('reset_token.html', title='Reset Password', form=form)                        
+ 
 @app.route('/post/new', methods=["GET", "POST"])
 @login_required
 def new_post():
     form = PostForm()
+    
+    if form.manual.data:
+        print('manual baby')
     if form.validate_on_submit():
+
         data = getBookDetails(form.isbn.data)
-        post = Posts(isbn=form.isbn.data, condition=form.condition.data, price=form.price.data, major=form.major.data, author=current_user, title=data['title'], publisher=data['publisher'], writers=data['author'], image_ref=data['imgCover'])
+        if data:
+            post = Posts(isbn=form.isbn.data, condition=form.condition.data, price=form.price.data, major=form.major.data, author=current_user, title=data['title'], publisher=data['publisher'], writers=data['author'], image_ref=data['imgCover'])
+            db.session.add(post)
+            db.session.commit()
+            flash("Your post has been created.", "success")
+            return redirect('/home')
+        else:
+            flash("There was an error fetching your textbook.\nPlease Check your ISBN", "warning")
+            #return render_template('create_manually.html', title="New")
+    return render_template('create_post.html', title="New Post", form=form, legend='New Post')
+
+
+
+
+
+
+#route for manual entry of isbn, title, etc.
+@app.route('/post/new/manual-entry', methods=["GET", "POST"])
+@login_required
+def new_manual_post():
+    form = PostForm()
+    
+    if form.validate_on_submit():
+
+        #no scraping for manual entry
+        #data = getBookDetails(form.isbn.data)
+        
+        post = Posts(isbn=form.isbn.data, condition=form.condition.data, price=form.price.data, major=form.major.data, author=current_user, title=form.title.data, writers="Gene Simmons")
         db.session.add(post)
         db.session.commit()
-        flash("Your post has been created.", "success")
+
         return redirect('/home')
-    return render_template('create_post.html', title="New Post", form=form, legend='New Post')
+        
+    return render_template('create_manually.html', title="New Manual Post", form=form, legend='New Manual Post')
+
+
 
 
 
@@ -83,7 +233,22 @@ def post(post_id):
     comment = Comments.query.filter_by(posts_id=post.id).all()
     ids = [item.user_id for item in comment]
     users = User.query.filter(User.id.in_(ids)).all()
+
+    cform = CommentForm()
     
+
+
+    if current_user.is_authenticated:
+        
+        is_saved = Saves.query.filter_by(user_id=current_user.id, posts_id=post_id).all()
+
+        if is_saved:
+            cform.save.label.text = 'Remove from Saves'
+        else:
+            cform.save.label.text = 'Save Post'
+    else:
+            cform.save.label.text = None
+
     comments = []
     for c in comment:
         user = None
@@ -98,26 +263,53 @@ def post(post_id):
                 "comment_time": c.comment_time.strftime("%d-%m-%Y %I:%M%p")
             })
     
+    #cform.comment.data = "Enter text here"
 
-    form = CommentForm()
+    if cform.validate_on_submit():
+        if cform.save.data:
 
-    if form.validate_on_submit():        
-        comment = Comments(comment_text=form.comment.data, user_id=current_user.id, posts_id=post.id)
+            print(";")
+            if len(is_saved) == 0:
+                
+                save = Saves(user_id=current_user.id, posts_id=post_id)
+                db.session.add(save)
+                db.session.commit()
+                flash('This post has been saved.', 'success')
+                return redirect(url_for('post', post_id=post_id))
+            else:
+                db.session.delete(is_saved[0])
+                db.session.commit()
+                flash('This post has been removed from saves.', 'success')
+                return redirect(url_for('post', post_id=post_id))        
+        else:
+            comment = Comments(comment_text=cform.comment.data, user_id=current_user.id, posts_id=post.id)
 
-        db.session.add(comment)
-        db.session.commit()
-        flash("Your comment was posted successfully!", "success")
-        return redirect(url_for('post', post_id=post.id))
-
-
-    return render_template('post.html', title=Posts.title, post=post, form=form, comment=comments)
-
-
-
+            if cform.comment.data != "Enter text here":
+                db.session.add(comment)
+                db.session.commit()
+                flash("Your comment was posted successfully!", "success")
+                return redirect(url_for('post', post_id=post.id))
+   
+    return render_template('post.html', title=Posts.title, post=post, form=cform, comment=comments)
 
 
 
 
+
+
+
+@app.route('/posts/saves', methods=['GET', 'POST'])
+@login_required
+def saved():
+    saves = Saves.query.filter_by(user_id=current_user.id).all()
+    page = request.args.get('page', 1, type=int)
+    ids = [item.posts_id for item in saves]
+    post = Posts.query\
+                 .filter(Posts.id.in_(ids))\
+                 .paginate(per_page=5, page=page)
+    
+    # I will add something to where you can remove from saves
+    return render_template('home.html', posts=post)
 
 
 @app.route('/post/<int:post_id>/update', methods=['GET', 'POST'])
@@ -134,7 +326,6 @@ def update_post(post_id):
         flash("Your post was updated successfully!", "success")
         return redirect(url_for('post', post_id=post.id))
     elif request.method == 'GET':
-        form.title.data = post.title
         form.isbn.data = post.isbn
         form.price.data = post.price
         form.major.data = post.major

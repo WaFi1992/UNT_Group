@@ -1,5 +1,6 @@
 from datetime import datetime
-from bookapp import db, loginManager
+from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
+from bookapp import db, loginManager, app
 from flask_login import UserMixin
 
 @loginManager.user_loader
@@ -16,6 +17,19 @@ class User(db.Model, UserMixin):
     payment_profile = db.Column(db.String(60))
     major = db.Column(db.String(20))
     posts = db.relationship('Posts', backref='author', lazy=True)
+    
+    def get_reset_token(self, expires_sec=1800):
+        s = Serializer(app.config['SECRET_KEY'], expires_sec)
+        return s.dumps({'user_id': self.id}).decode('utf-8')
+        
+    @staticmethod
+    def verify_reset_token(token):
+        s = Serializer(app.config['SECRET_KEY'])
+        try:
+            user_id = s.loads(token)['user_id']
+        except:
+            return None
+        return User.query.get(user_id)
 
     def __repr__(self):
         return f"User('{self.username}', '{self.email}', '{self.image_file}')"
@@ -27,11 +41,10 @@ class Posts(db.Model):
     date_posted = db.Column(db.DateTime, nullable=False,
                             default=datetime.utcnow)
     title = db.Column(db.Text, nullable=False)
-    publisher = db.Column(db.Text, nullable=False)
-    writers = db.Column(db.Text, nullable=False)
-    image_ref = db.Column(db.String(120), nullable=False, default='book.jpg')
+    publisher = db.Column(db.Text)
+    writers = db.Column(db.Text)
+    image_ref = db.Column(db.String(120), default='book.jpg')
     condition = db.Column(db.Text, nullable=False)
-    
     price = db.Column(db.String(60), nullable=False)
     major = db.Column(db.String(20))
     edition = db.Column(db.String(20))
@@ -53,3 +66,11 @@ class Comments(db.Model):
 
     def __repr__(self):
         return f"Post('{self.title},')"
+
+
+class Saves(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    posts_id = db.Column(db.Integer, db.ForeignKey('posts.id'), nullable=False)
+    def __repr__(self):
+        return f"/post/{self.posts_id}"
