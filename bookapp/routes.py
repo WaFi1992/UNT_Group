@@ -181,13 +181,15 @@ def reset_token(token):
 def new_post():
     form = PostForm()
     if form.validate_on_submit():
-        print(":)")
         data = getBookDetails(form.isbn.data)
-        post = Posts(isbn=form.isbn.data, condition=form.condition.data, price=form.price.data, major=form.major.data, author=current_user, title=data['title'], publisher=data['publisher'], writers=data['author'], image_ref=data['imgCover'])
-        db.session.add(post)
-        db.session.commit()
-        flash("Your post has been created.", "success")
-        return redirect('/home')
+        if data:
+            post = Posts(isbn=form.isbn.data, condition=form.condition.data, price=form.price.data, major=form.major.data, author=current_user, title=data['title'], publisher=data['publisher'], writers=data['author'], image_ref=data['imgCover'])
+            db.session.add(post)
+            db.session.commit()
+            flash("Your post has been created.", "success")
+            return redirect('/home')
+        else:
+            flash("There was an error fetching your textbook.\nPlease Check your ISBN", "warning")
     return render_template('create_post.html', title="New Post", form=form, legend='New Post')
 
 @app.route('/post/<int:post_id>', methods=['GET','POST'])
@@ -196,7 +198,20 @@ def post(post_id):
     comment = Comments.query.filter_by(posts_id=post.id).all()
     ids = [item.user_id for item in comment]
     users = User.query.filter(User.id.in_(ids)).all()
-    is_saved = Saves.query.filter_by(user_id=current_user.id, posts_id=post_id).all()
+
+    cform = CommentForm()
+
+
+    if current_user.is_authenticated:
+        
+        is_saved = Saves.query.filter_by(user_id=current_user.id, posts_id=post_id).all()
+
+        if is_saved:
+            cform.save.label.text = 'Remove from Saves'
+        else:
+            cform.save.label.text = 'Save Post'
+    else:
+            cform.save.label.text = None
 
     comments = []
     for c in comment:
@@ -212,8 +227,6 @@ def post(post_id):
                 "comment_time": c.comment_time.strftime("%d-%m-%Y %I:%M%p")
             })
     
-
-    cform = CommentForm()
 
     if cform.validate_on_submit():
         if cform.save.data:
@@ -235,10 +248,7 @@ def post(post_id):
             db.session.commit()
             flash("Your comment was posted successfully!", "success")
             return redirect(url_for('post', post_id=post.id))
-    if is_saved:
-        cform.save.label.text = 'Remove from Saves'
-    else:
-        cform.save.label.text = 'Save Post'
+   
     return render_template('post.html', title=Posts.title, post=post, form=cform, comment=comments)
 
 

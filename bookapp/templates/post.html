@@ -3,9 +3,11 @@
     <article class="media content-section">
         <form method="POST" action="">
             {{ form.hidden_tag() }}
-            <div class="form-group">
-                {{ form.save(class="btn btn-outline-info") }}
-            </div>
+            {% if current_user.is_authenticated %}
+                <div class="form-group">
+                    {{ form.save(class="btn btn-outline-info") }}
+                </div>
+            {% endif %}
         <div class="media-body">
             <div class="article-metadata">
                 <div id="coverImageContainer" class="imageContainer">
@@ -26,26 +28,28 @@
     </article>
     <!-- Comment Section -->
     <div class="content-section">
-            <fieldset class="form-group">
-                
+            {% if current_user.is_authenticated %}
+                <fieldset class="form-group">
+                    
+                    <div class="form-group">
+                        {{form.comment.label(class="form-control-label")}}
+                        {% if form.comment.errors %}
+                            {{form.comment(class="form-control form-control-lg is-invalid")}}
+                            <div class="invalid-feedback">
+                                {% for error in form.comment.errors %}
+                                    <span>{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            {{form.comment(class="form-control form-control-lg")}}
+                        {% endif %}       
+                    </div>
+                    
+                </fieldset>
                 <div class="form-group">
-                    {{form.comment.label(class="form-control-label")}}
-                    {% if form.comment.errors %}
-                        {{form.comment(class="form-control form-control-lg is-invalid")}}
-                        <div class="invalid-feedback">
-                            {% for error in form.comment.errors %}
-                                <span>{{ error }}</span>
-                            {% endfor %}
-                        </div>
-                    {% else %}
-                        {{form.comment(class="form-control form-control-lg")}}
-                    {% endif %}       
+                    {{ form.submit(class="btn btn-outline-info")}}
                 </div>
-                
-            </fieldset>
-            <div class="form-group">
-                {{ form.submit(class="btn btn-outline-info")}}
-            </div>
+            {% endif %}
         </form>
     </div>
 

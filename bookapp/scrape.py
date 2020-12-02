@@ -31,10 +31,13 @@ def getBookDetails(isbn):
     author = soup.find(itemprop='author')
     #print(f"Author: {author.contents[0]}")
 
-    results.update({'imgCover': imgCover.get('src'),
-                    'title': title.contents[0],
-                    'publisher': publisher.contents[0],
-                    'author': author.contents[0]})
+    try:
+        results.update({'imgCover': imgCover.get('src'),
+                        'title': title.contents[0],
+                        'publisher': publisher.contents[0],
+                        'author': author.contents[0]})
+    except Exception as e:
+        return None
     
 
     return results
