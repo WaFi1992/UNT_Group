@@ -107,12 +107,20 @@ class ResetPasswordForm(FlaskForm):
     
 class CommentForm(FlaskForm):
     save = SubmitField()
-    comment = StringField('Comment', validators=[])
+    comment = StringField('Comment', validators=[DataRequired()])
     submit = SubmitField('Post Comment')
+
     def validate_submit(self, submit):
-        if self.comment is None:
-            raise ValidationError('A comment can not be empty!')   
-    
+        if self.comment.data is None:
+            raise ValidationError('A comment can not be empty!')
+
+
+class SearchForm(FlaskForm):
+
+    search = StringField(validators=[DataRequired(), Length(min=2, max=20)])
+    submit = SubmitField('Search')
+
+
 class UpdateAccountForm(FlaskForm):
     username = StringField('Username',
                             validators=[DataRequired(), Length(min=2, max=20)])
