@@ -1,5 +1,6 @@
 from datetime import datetime
-from bookapp import db, loginManager
+from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
+from bookapp import db, loginManager, app
 from flask_login import UserMixin
 
 @loginManager.user_loader
@@ -16,6 +17,19 @@ class User(db.Model, UserMixin):
     payment_profile = db.Column(db.String(60))
     major = db.Column(db.String(20))
     posts = db.relationship('Posts', backref='author', lazy=True)
+    
+    def get_reset_token(self, expires_sec=1800):
+        s = Serializer(app.config['SECRET_KEY'], expires_sec)
+        return s.dumps({'user_id': self.id}).decode('utf-8')
+        
+    @staticmethod
+    def verify_reset_token(token):
+        s = Serializer(app.config['SECRET_KEY'])
+        try:
+            user_id = s.loads(token)['user_id']
+        except:
+            return None
+        return User.query.get(user_id)
 
     def __repr__(self):
         return f"User('{self.username}', '{self.email}', '{self.image_file}')"
@@ -35,6 +49,7 @@ class Posts(db.Model):
     major = db.Column(db.String(20))
     edition = db.Column(db.String(20))
     binding = db.Column(db.String(20))
+    #comments = db.Column(db.Integer, default=0)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
     def __repr__(self):
@@ -45,7 +60,17 @@ class Comments(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     comment_text = db.Column(db.Text, nullable=False)
+    comment_time = db.Column(db.DateTime, nullable=False, 
+                    default=datetime.utcnow)
     posts_id = db.Column(db.Integer, db.ForeignKey('posts.id'), nullable=False)
 
     def __repr__(self):
         return f"Post('{self.title},')"
+
+
+class Saves(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    posts_id = db.Column(db.Integer, db.ForeignKey('posts.id'), nullable=False)
+    def __repr__(self):
+        return f"/post/{self.posts_id}"
