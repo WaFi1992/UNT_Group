@@ -205,7 +205,11 @@ def reset_token(token):
 @login_required
 def new_post():
     form = PostForm()
+    
+    if form.manual.data:
+        print('manual baby')
     if form.validate_on_submit():
+
         data = getBookDetails(form.isbn.data)
         if data:
             post = Posts(isbn=form.isbn.data, condition=form.condition.data, price=form.price.data, major=form.major.data, author=current_user, title=data['title'], publisher=data['publisher'], writers=data['author'], image_ref=data['imgCover'])
@@ -215,7 +219,38 @@ def new_post():
             return redirect('/home')
         else:
             flash("There was an error fetching your textbook.\nPlease Check your ISBN", "warning")
-    return render_template('create_post.html', title="New Post", form=form, legend='New Post')    
+            #return render_template('create_manually.html', title="New")
+    return render_template('create_post.html', title="New Post", form=form, legend='New Post')
+
+
+
+
+
+
+#route for manual entry of isbn, title, etc.
+@app.route('/post/new/manual-entry', methods=["GET", "POST"])
+@login_required
+def new_manual_post():
+    form = PostForm()
+    
+    if form.validate_on_submit():
+
+        #no scraping for manual entry
+        #data = getBookDetails(form.isbn.data)
+        
+        post = Posts(isbn=form.isbn.data, condition=form.condition.data, price=form.price.data, major=form.major.data, author=current_user, title=form.title.data, writers="Gene Simmons")
+        db.session.add(post)
+        db.session.commit()
+
+        return redirect('/home')
+        
+    return render_template('create_manually.html', title="New Manual Post", form=form, legend='New Manual Post')
+
+
+
+
+
+
 
 @app.route('/post/<int:post_id>', methods=['GET','POST'])
 def post(post_id):
@@ -225,6 +260,7 @@ def post(post_id):
     users = User.query.filter(User.id.in_(ids)).all()
 
     cform = CommentForm()
+    
 
 
     if current_user.is_authenticated:
@@ -252,6 +288,26 @@ def post(post_id):
                 "comment_time": c.comment_time.strftime("%d-%m-%Y %I:%M%p")
             })
     
+    #cform.comment.data = "Enter text here"
+
+    if cform.validate_on_submit():
+        if cform.save.data:
+
+            print(";")
+            if len(is_saved) == 0:
+                
+                save = Saves(user_id=current_user.id, posts_id=post_id)
+                db.session.add(save)
+                db.session.commit()
+                flash('This post has been saved.', 'success')
+                return redirect(url_for('post', post_id=post_id))
+            else:
+                db.session.delete(is_saved[0])
+                db.session.commit()
+                flash('This post has been removed from saves.', 'success')
+                return redirect(url_for('post', post_id=post_id))        
+        else:
+            comment = Comments(comment_text=cform.comment.data, user_id=current_user.id, posts_id=post.id)
 
     if cform.validate_on_submit():
         if cform.save.data:
@@ -268,11 +324,11 @@ def post(post_id):
                 flash('This post has been removed from saves.')
                 return redirect(url_for('post', post_id=post_id))        
         else:
-            comment = Comments(comment_text=cform.comment.data, user_id=current_user.id, posts_id=post.id)
-            db.session.add(comment)
-            db.session.commit()
-            flash("Your comment was posted successfully!", "success")
-            return redirect(url_for('post', post_id=post.id))
+            if cform.comment.data != "Enter text here":
+                db.session.add(comment)
+                db.session.commit()
+                flash("Your comment was posted successfully!", "success")
+                return redirect(url_for('post', post_id=post.id))
    
     return render_template('post.html', title=Posts.title, post=post, form=cform, comment=comments)
 

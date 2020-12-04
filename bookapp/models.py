@@ -41,9 +41,9 @@ class Posts(db.Model):
     date_posted = db.Column(db.DateTime, nullable=False,
                             default=datetime.utcnow)
     title = db.Column(db.Text, nullable=False)
-    publisher = db.Column(db.Text, nullable=False)
-    writers = db.Column(db.Text, nullable=False)
-    image_ref = db.Column(db.String(120), nullable=False, default='book.jpg')
+    publisher = db.Column(db.Text)
+    writers = db.Column(db.Text)
+    image_ref = db.Column(db.String(120), default='book.jpg')
     condition = db.Column(db.Text, nullable=False)
     price = db.Column(db.String(60), nullable=False)
     major = db.Column(db.String(20))

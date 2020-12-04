@@ -23,15 +23,19 @@
                 {% endif %}
             </div>
             <h2 class="article-title">{{ post.title }}</h2>
-            <p class="article-description">{{ post.condition }}</p>
+            <p class="article-description"> Condition: {{ post.condition }}</p>
+            <p class="article-price"> Price: {{ post.price }}</p>
+            <p class="article-major"> Major: {{ post.major }}</p>
         </div>
     </article>
     <!-- Comment Section -->
     <div class="content-section">
+        
             {% if current_user.is_authenticated %}
                 <fieldset class="form-group">
                     
                     <div class="form-group">
+                        
                         {{form.comment.label(class="form-control-label")}}
                         {% if form.comment.errors %}
                             {{form.comment(class="form-control form-control-lg is-invalid")}}
@@ -41,7 +45,7 @@
                                 {% endfor %}
                             </div>
                         {% else %}
-                            {{form.comment(class="form-control form-control-lg")}}
+                            {{form.comment(class="form-control form-control-lg", value="Enter text here", onclick="this.select()")}}
                         {% endif %}       
                     </div>
                     
@@ -70,6 +74,7 @@
         {% endfor %}
     </div>
        
+        
 
 
 
