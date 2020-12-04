@@ -30,6 +30,7 @@ body {
     border: 1px solid #dddddd;
     border-radius: 3px;
     margin-bottom: 20px;
+    float: left;
   }
   
   .article-title {
@@ -142,3 +143,4 @@ body {
 	  height: 30px;
   }
   
+  }
